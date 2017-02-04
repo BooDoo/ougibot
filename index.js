@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 const path = require('path');
 const _ = require('lodash');
 const rp = require('request-promise');

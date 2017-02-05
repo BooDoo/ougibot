@@ -1,5 +1,11 @@
 #!/usr/bin/env node
 
+// Replace Math.random() with MT-based substitute:
+const MersenneTwister = require('mersenne-twister');
+const rng = new MersenneTwister();
+Math.random = rng.random.bind(rng);
+
+// Then go ahead and set up rest as normal
 const path = require('path');
 const _ = require('lodash');
 const rp = require('request-promise');

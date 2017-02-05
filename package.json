@@ -8,6 +8,7 @@
     "discord.js": "^11.0.0",
     "erlpack": "git://github.com/hammerandchisel/erlpack.git#b3c9a6769b347299eb2eed10738c0b3b6cb96cb7",
     "lodash": "^4.17.4",
+    "mersenne-twister": "^1.1.0",
     "node-opus": "^0.2.4",
     "opusscript": "0.0.2",
     "request": "^2.79.0",

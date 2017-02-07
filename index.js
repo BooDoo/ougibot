@@ -11,11 +11,13 @@ const _ = require('lodash');
 const rp = require('request-promise');
 const Discord = require('discord.js');
 const ougi = new Discord.Client();
-const creds = require('./credentials');
-const token = creds.discord.token;
 
+const creds = require('./credentials');
+const DISCORD_TOKEN = creds.discord.token;
+const SAUCENAO_KEY = creds.saucenao.key;
 const SAFEBOORU_ROOT = 'https://safebooru.org';
-const SAUCENAO_ROOT = 'http://saucenao.com';
+const SAUCENAO_ROOT = 'https://saucenao.com';
+const PIXIV_ROOT = 'https://pixiv.net';
 const COLORS = {
   "ok": 0x71cd40,
   "bad": 0xb00d00
@@ -46,6 +48,9 @@ let embedOpts = {
       provider: {
         name: "SauceNAO",
         url: SAUCENAO_ROOT
+      },
+      image: {
+        url: null
       },
       title: "Check SauceNAO",
       description: null,
@@ -108,7 +113,7 @@ let commandProcessors = {
     let content = '',
         opts = _.cloneDeep(embedOpts['~saucenao']),
         urlsTest = /https?:\/\/\S{2,}\.\S{2,}/ig,
-        srcUrl, encodedUrl;
+        srcUrl, encodedUrl, matches, topMatch;
 
     if (message.content.match(urlsTest)) {
       srcUrl = message.content.match(urlsTest)[0];
@@ -126,20 +131,37 @@ let commandProcessors = {
     }
 
     if (srcUrl) {
-      console.log(`SauceNAO for ${srcUrl}`);
       encodedUrl = encodeURIComponent(srcUrl);
-      opts.embed.color = COLORS.ok;
-      opts.embed.title = "Check SauceNAO";
-      opts.embed.url = `${SAUCENAO_ROOT}/search.php?db=999&url=${encodedUrl}`;
-      opts.embed.description = `${mentionString(supplicant)} Good luck!`;
+      return rp({
+        uri: `${SAUCENAO_ROOT}/search.php?api_key=${SAUCENAO_KEY}&db=999&output_type=2&numres=2&url=${encodedUrl}`,
+        json: true
+      }).then(res => {
+        if (res.results.length && res.results[0].data.pixiv_id) {
+          matches = res.results;
+          topMatch = matches[0];
+          opts.embed.color = COLORS.ok;
+          opts.embed.title = `${topMatch.data.title} by ${topMatch.data.member_name || topMatch.data.creator}`;
+          opts.embed.url = `${PIXIV_ROOT}/member_illust.php?mode=medium&illust_id=${topMatch.data.pixiv_id}`;
+          opts.embed.description = `${mentionString(supplicant)} Found on Pixiv!`;
+          opts.embed.image.url = topMatch.header.thumbnail;
+        }
+        else {
+          opts.embed.color = COLORS.bad;
+          opts.embed.title = 'Check SauceNAO';
+          opts.embed.url = `${SAUCENAO_ROOT}/search.php?db=999&url=${encodedUrl}`;
+          opts.embed.description = `${mentionString(supplicant)} I didn't find any Pixiv matches…good luck!`
+        }
+
+        return {content: content, opts: opts};
+      });
     }
+
     else {
       opts.embed.color = COLORS.bad;
       opts.embed.title = '';
       opts.embed.description = `${mentionString(supplicant)} Not sure what you want source for…`
+      return Promise.resolve({content: content, opts: opts});
     }
-
-    return Promise.resolve({content: content, opts: opts});
   }
 };
 // set cmdProc aliases:
@@ -219,4 +241,4 @@ ougi.on('message', message => {
 });
 
 // log in
-ougi.login(token);
+ougi.login(DISCORD_TOKEN);

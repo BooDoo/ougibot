@@ -67,7 +67,7 @@ let commandProcessors = {
       if (!res) {
         return {
           content: '',
-          opts: {embed: {color: COLORS.bad, description: `${mentionString(supplicant)} Nothing found for ${tags.join(' ')}`} }
+          opts: {embed: {color: COLORS.bad, description: `${mentionString(supplicant)} Nothing found for ${tagReturn(tags)}` }}
         };
       }
 
@@ -89,7 +89,7 @@ let commandProcessors = {
       opts.embed.description = `${mentionString(supplicant)}`;
       opts.embed.description += ` 1 of ${resultCount}`;
       opts.embed.description += (resultCount === 100) ? '+' : '';
-      opts.embed.description += ` for\n${tags.join(' ')}`;
+      opts.embed.description += ` for\n${tagReturn(tags)}`;
       if (hasSample) {
         opts.embed.description += "\n(using resized sample)";
         opts.embed.url = pageUrl;
@@ -145,6 +145,11 @@ let commandProcessors = {
 // set cmdProc aliases:
 commandProcessors['~s'] = commandProcessors['~sb'] = commandProcessors['~safe'] = commandProcessors['~safebooru'];
 commandProcessors['~source'] = commandProcessors['~sauce'] = commandProcessors['~src'] = commandProcessors['~saucenao'];
+
+function tagReturn(tags) {
+  let toEscape = /([\*\_])/g;
+  return `${tags.join(' ').replace(toEscape,"\\$1")}`;
+}
 
 function mentionString(user) {
   return `<@!${user.id}>`;

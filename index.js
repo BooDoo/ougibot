@@ -11,6 +11,7 @@ const _ = require('lodash');
 const rp = require('request-promise');
 const Discord = require('discord.js');
 const ougi = new Discord.Client();
+const cheerio = require('cheerio');
 
 const creds = require('./credentials');
 const DISCORD_TOKEN = creds.discord.token;
@@ -18,10 +19,19 @@ const SAUCENAO_KEY = creds.saucenao.key;
 const SAFEBOORU_ROOT = 'https://safebooru.org';
 const SAUCENAO_ROOT = 'https://saucenao.com';
 const PIXIV_ROOT = 'https://pixiv.net';
+const OVERBUFF_ROOT = 'https://overbuff.com';
+
 const COLORS = {
   "ok": 0x71cd40,
   "bad": 0xb00d00
 };
+
+let userIDs = creds.identities;
+// Create some convenience aliases:
+userIDs.drew = userIDs.alix = userIDs.alixnovosi = userIDs.shelur = userIDs.andrew;
+userIDs.boodoo = userIDs.boodooperson = userIDs.gm = userIDs.joel;
+userIDs.nixed = userIDs.nickisnixed = userIDs.humble = userIDs.nick;
+userIDs.tsiro = userIDs.orist = userIDs.richard;
 
 let embedOpts = {
   "~safebooru": {
@@ -34,9 +44,6 @@ let embedOpts = {
       image: {
         url: null
       },
-      // footer: {
-      //   text:"Safebooru"
-      // },
       title: null,
       description: null,
       url: null
@@ -53,6 +60,21 @@ let embedOpts = {
         url: null
       },
       title: "Check SauceNAO",
+      description: null,
+      url: null
+    }
+  },
+  "~overbuff": {
+    embed: {
+      color: null,
+      provider: {
+        name: "Overbuff",
+        url: OVERBUFF_ROOT
+      },
+      image: {
+        url: null
+      },
+      title: "See on Overbuff",
       description: null,
       url: null
     }
@@ -119,14 +141,14 @@ let commandProcessors = {
       srcUrl = message.content.match(urlsTest)[0];
     }
     else if (message.embeds.length) {
-      console.dir(message.embeds);
+      // console.dir(message.embeds);
       let imgEmbeds = _.filter(message.embeds, {type: 'image'});
       if (imgEmbeds) {
         srcUrl = imgEmbeds[0].url;
       }
     }
     else if (message.attachments.array().length) {
-      console.dir(message.attachments.array());
+      // console.dir(message.attachments.array());
       srcUrl = message.attachments.map(attach=>attach.url)[0];
     }
 
@@ -162,11 +184,51 @@ let commandProcessors = {
       opts.embed.description = `${mentionString(supplicant)} Not sure what you want source for…`
       return Promise.resolve({content: content, opts: opts});
     }
+  },
+
+  "~overbuff": function(message, supplicant, channel) {
+    let payload = message.content.toLowerCase().split(' ').splice(1),
+        [player, ...hero] = payload,
+        user = userIDs[player] ? userIDs[player] : _.find(userIDs, {discord: supplicant.id}),
+        userTag = user.battlenet,
+        overbuffTarget = `${OVERBUFF_ROOT}/players/pc/${userTag}`;
+
+    hero = hero.join(' ').replace(/[^A-z0-9]/g,'').toLowerCase();
+
+    return rp(overbuffTarget).
+    then(res =>{
+
+    let content = '',
+        opts = _.cloneDeep(embedOpts['~overbuff']),
+        $ = cheerio.load(res),
+        context = hero ? `div.theme-hero-${hero}` : null,
+        winSelector = `span.color-stat-win`,
+        winLoss = $(winSelector, context).first().parent().text(),
+        [wins, losses] = winLoss.split('-').map(_.parseInt),
+        winRate = ((wins/(wins+losses))*100).toString().split('').splice(0,5).join('') + '%',
+        imgUrl = $('img', context).first().attr('src');
+
+        // Did we get fully qualified, or need to work with relative URL?
+        if (imgUrl[0] == '/') {
+          imgUrl = `${OVERBUFF_ROOT}${imgUrl}`;
+        }
+
+        opts.embed.color = COLORS.ok;
+        opts.embed.title = "View on Overbuff";
+        opts.embed.description = `${mentionString(supplicant)}`;
+        opts.embed.description += ` ${winLoss} (${winRate}) as ${hero ? hero : 'all heroes'}`;
+        opts.embed.description += `\nfor ${userTag}`;
+        opts.embed.url = hero ? `${overbuffTarget}/heroes/${hero}` : overbuffTarget;
+        opts.embed.image.url = imgUrl;
+
+        return {content: content, opts: opts};
+      })
   }
 };
 // set cmdProc aliases:
 commandProcessors['~s'] = commandProcessors['~sb'] = commandProcessors['~safe'] = commandProcessors['~safebooru'];
 commandProcessors['~source'] = commandProcessors['~sauce'] = commandProcessors['~src'] = commandProcessors['~saucenao'];
+commandProcessors['~winloss'] = commandProcessors['~ratio'] = commandProcessors['~wl'] = commandProcessors['~overbuff'];
 
 function tagReturn(tags) {
   let toEscape = /([\*\_])/g;
@@ -236,7 +298,14 @@ ougi.on('message', message => {
     toReply.then(response => {
       console.dir(response.opts);
       return command.channel.sendMessage(response.content, response.opts);
-    }).catch(err => {console.error(err)})
+    }).catch(err => {
+      console.error(err);
+      return command.channel.sendMessage('', {embed: {
+          color: COLORS.bad,
+          description: `${mentionString(command.supplicant)} Oh no I hecked up`
+        }
+      });
+    });
   }
 });
 

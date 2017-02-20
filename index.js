@@ -187,10 +187,9 @@ let commandProcessors = {
   },
 
   "~overbuff": function(message, supplicant, channel) {
-    let payload = message.content.toLowerCase().split(' ').splice(1),
+    let payload = message.content.split(' ').splice(1),
         [player, ...hero] = payload,
-        user = userIDs[player] ? userIDs[player] : _.find(userIDs, {discord: supplicant.id}),
-        userTag = user.battlenet,
+        userTag = parseBattletag(player, supplicant.id),
         overbuffTarget = `${OVERBUFF_ROOT}/players/pc/${userTag}`;
 
     hero = hero.join(' ').replace(/[^A-z0-9]/g,'').toLowerCase();
@@ -283,6 +282,20 @@ function parseCommand(msg) {
       channel = msg.channel;
 
   return {proc: proc, message: msg, supplicant: supplicant, channel: channel};
+}
+
+function parseBattletag(player, supplicantId) {
+  let user, battleTag;
+
+  if (~player.indexOf('#')) {
+    battleTag = player.replace('#', '-');
+  } else {
+    player = player.toLowerCase();
+    user = userIDs[player] ? userIDs[player] : _.find(userIDs, {discord: supplicantId});
+    battleTag = user.battlenet;
+  }
+
+  return battleTag
 }
 
 ougi.on('ready', () => {

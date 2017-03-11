@@ -311,11 +311,6 @@ ougi.on('ready', () => {
 
 // create an event listener for messages
 ougi.on('message', message => {
-  // return DMs as ROT13(/5):
-  if (message.channel.type == "dm" && !message.author.bot) {
-    return message.reply(rot13(message.content));
-  }
-
   // General command/utility interpretation for non-DM
   let command = parseCommand(message);
 
@@ -332,6 +327,10 @@ ougi.on('message', message => {
         }
       });
     });
+  }
+  // return DMs as ROT13(/5):
+  else if (message.channel.type == "dm" && !message.author.bot) {
+    return message.reply(rot13(message.content));
   }
 });
 

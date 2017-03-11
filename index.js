@@ -221,7 +221,7 @@ let commandProcessors = {
         opts.embed.image.url = imgUrl;
 
         return {content: content, opts: opts};
-      })
+    });
   }
 };
 // set cmdProc aliases:
@@ -298,12 +298,25 @@ function parseBattletag(player, supplicantId) {
   return battleTag
 }
 
+function rot13(input) {
+  // thanks, "ESL": http://stackoverflow.com/a/41435838/1414079
+  return input.
+    replace(/[a-z]/gi,c=>String.fromCharCode((c=c.charCodeAt())+((c&95)>77?-13:13))).
+    replace(/\d/gi,c=>(c>4?-5:5)+c*1);
+}
+
 ougi.on('ready', () => {
   console.log('Ougibot is ready!');
 });
 
 // create an event listener for messages
 ougi.on('message', message => {
+  // return DMs as ROT13(/5):
+  if (message.channel.type == "dm" && !message.author.bot) {
+    return message.reply(rot13(message.content));
+  }
+
+  // General command/utility interpretation for non-DM
   let command = parseCommand(message);
 
   if (command.proc) {

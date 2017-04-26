@@ -334,5 +334,10 @@ ougi.on('message', message => {
   }
 });
 
+// There's no way this works, is there?
+ougi.on('disconnect', closeEvent => {
+  ougi.login(DISCORD_TOKEN);
+});
+
 // log in
 ougi.login(DISCORD_TOKEN);

@@ -32,6 +32,8 @@ userIDs.drew = userIDs.alix = userIDs.alixnovosi = userIDs.shelur = userIDs.andr
 userIDs.boodoo = userIDs.boodooperson = userIDs.gm = userIDs.joel;
 userIDs.nixed = userIDs.nickisnixed = userIDs.humble = userIDs.nick;
 userIDs.tsiro = userIDs.orist = userIDs.richard;
+userIDs.nate = userIDs.lentilstew = userIDs.lentil = userIDs.nathaniel;
+userIDs.webber = userIDs.weebs;
 
 let embedOpts = {
   "~safebooru": {
@@ -332,11 +334,6 @@ ougi.on('message', message => {
   else if (message.channel.type == "dm" && !message.author.bot) {
     return message.reply(rot13(message.content));
   }
-});
-
-// There's no way this works, is there?
-ougi.on('disconnect', closeEvent => {
-  ougi.login(DISCORD_TOKEN);
 });
 
 // log in

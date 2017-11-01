@@ -341,5 +341,36 @@ ougi.on('message', message => {
   }
 });
 
+ougi.on('messageReactionAdd', (msgReaction, user) => {
+  // console.log(`I saw a reaction, using ${msgReaction.emoji.name}, from ${user.username}`);
+  let rotTriggers = ['🔃','🔄'],
+      srcTriggers = ['ℹ'];
+
+  // If the reaction is :arrows_clockwise: or :arrows_counterclockwise:
+  if (~_.indexOf(rotTriggers, msgReaction.emoji.name)) {
+      let originalContent = msgReaction.message.content,
+          rotContent = rot13(originalContent);
+
+    if (rotContent) {
+      // DM the user, with ROT13 of the message body.
+      return user.createDM().then(dm => dm.send(rotContent)).catch(console.error);
+    } else {
+      return Promise.resolve('ROT13: nothing to decode');
+    }
+
+  }
+
+  // ELSE: If the reaction is :information_source:
+  else if (~_.indexOf(srcTriggers, msgReaction.emoji.name)) {
+    // act like ~src command, but reply by DM
+    let dm = user.createDM(),
+        toReply = commandProcessors["~saucenao"](msgReaction.message, user, null);
+
+    return P.all([dm, toReply]).
+      then(([dm, toReply]) => dm.send(toReply.content, toReply.opts)).
+      catch(console.error);
+  }
+});
+
 // log in
 ougi.login(DISCORD_TOKEN);

@@ -8,6 +8,7 @@ Math.random = rng.random.bind(rng);
 // Then go ahead and set up rest as normal
 const path = require('path');
 const _ = require('lodash');
+const P = require('bluebird');
 const rp = require('request-promise');
 const Discord = require('discord.js');
 const ougi = new Discord.Client();
@@ -139,6 +140,8 @@ let commandProcessors = {
         urlsTest = /https?:\/\/\S{2,}\.\S{2,}/ig,
         srcUrl, encodedUrl, matches, topMatch;
 
+    // console.log(`Working on ~src for ${message.id} from ${supplicant.username} in ${channel}`);
+
     if (message.content.match(urlsTest)) {
       srcUrl = message.content.match(urlsTest)[0];
     }
@@ -176,6 +179,8 @@ let commandProcessors = {
           opts.embed.description = `${mentionString(supplicant)} I didn't find any Pixiv matches…good luck!`
         }
 
+        // console.log(`SRC: Ready to return with ${content} and`);
+        // console.dir(opts);
         return {content: content, opts: opts};
       });
     }
@@ -319,11 +324,11 @@ ougi.on('message', message => {
   if (command.proc) {
     let toReply = command.proc(command.message, command.supplicant, command.channel);
     toReply.then(response => {
-      console.dir(response.opts);
-      return command.channel.sendMessage(response.content, response.opts);
+      // console.dir(response.opts);
+      return command.channel.send(response.content, response.opts);
     }).catch(err => {
       console.error(err);
-      return command.channel.sendMessage('', {embed: {
+      return command.channel.send('', {embed: {
           color: COLORS.bad,
           description: `${mentionString(command.supplicant)} Oh no I hecked up`
         }

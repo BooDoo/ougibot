@@ -4,9 +4,10 @@
   "description": "baby's first Discord bot",
   "main": "index.js",
   "dependencies": {
+    "bluebird": "^3.5.1",
     "bufferutil": "^2.0.0",
     "cheerio": "^0.22.0",
-    "discord.js": "^11.0.0",
+    "discord.js": "^11.2.1",
     "erlpack": "git://github.com/hammerandchisel/erlpack.git#b3c9a6769b347299eb2eed10738c0b3b6cb96cb7",
     "lodash": "^4.17.4",
     "mersenne-twister": "^1.1.0",

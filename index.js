@@ -397,6 +397,33 @@ function rot13(input) {
     replace(/\d/gi,c=>(c>4?-5:5)+c*1);
 }
 
+function twitterImageCount(message, match) {
+  // There could be more than one match! Discord embeds all of them
+  // Unfortunately we can't use more than one of the same reaction
+  // So just choose the last one i guess :(
+  link = match[match.length - 1]
+  // console.log(`Going to ${link}`)
+  rp({
+    uri: link,
+    json: false
+  }).then(res => {
+    // We look for both og:image and /media/ because videos also have an og:image
+    // Also to make this more annoying for people (joel) to try and cheese this
+    picMatch = res.match(/meta\s+property="og:image"\s+content="https:\/\/[a-z\.]+\/media/gi)
+
+    // Up to four images, if we get more do nothing
+    if (picMatch !== null && picMatch.length <= 4) {
+      numbers = ['1⃣', '2⃣', '3⃣', '4⃣'];
+      // React in order
+      message.react(numbers[picMatch.length - 1]).then(react => {
+        react.message.react('🖼');
+      });
+    }
+  }).catch(err => {
+    console.error(err);
+  })
+}
+
 ougi.on('ready', () => {
   console.log('Ougibot is ready!');
 });
@@ -422,6 +449,13 @@ ougi.on('message', message => {
   // return DMs as ROT13(/5):
   else if (message.channel.type == "dm" && !message.author.bot) {
     return message.reply(rot13(message.content));
+  }
+  else {
+    // Twitter link?
+    match = message.content.match(/https:\/\/twitter.com\/[a-z_]+\/status\/[0-9]+/gi)
+    if (match !== null) {
+      twitterImageCount(message, match);
+    }
   }
 });
 

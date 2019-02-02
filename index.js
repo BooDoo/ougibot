@@ -452,7 +452,7 @@ ougi.on('message', message => {
   }
   else {
     // Twitter link?
-    match = message.content.match(/https:\/\/twitter.com\/[a-z_]+\/status\/[0-9]+/gi)
+    match = message.content.match(/https:\/\/twitter.com\/[a-z_0-9]+\/status\/[0-9]+/gi)
     if (match !== null) {
       twitterImageCount(message, match);
     }

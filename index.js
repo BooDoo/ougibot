@@ -20,7 +20,6 @@ const SAUCENAO_KEY = creds.saucenao.key;
 const SAFEBOORU_ROOT = 'https://safebooru.org';
 const SAUCENAO_ROOT = 'https://saucenao.com';
 const PIXIV_ROOT = 'https://pixiv.net';
-const OVERBUFF_ROOT = 'https://overbuff.com';
 
 const COLORS = {
   "ok": 0x71cd40,
@@ -63,21 +62,6 @@ let embedOpts = {
         url: null
       },
       title: "Check SauceNAO",
-      description: null,
-      url: null
-    }
-  },
-  "~overbuff": {
-    embed: {
-      color: null,
-      provider: {
-        name: "Overbuff",
-        url: OVERBUFF_ROOT
-      },
-      image: {
-        url: null
-      },
-      title: "See on Overbuff",
       description: null,
       url: null
     }
@@ -275,50 +259,11 @@ let commandProcessors = {
       opts.embed.description = `${mentionString(supplicant)} Not sure what you want source for…`
       return Promise.resolve({content: content, opts: opts});
     }
-  },
-
-  "~overbuff": function(message, supplicant, channel) {
-    let payload = message.content.split(' ').splice(1),
-        [player, ...hero] = payload,
-        userTag = parseBattletag(player, supplicant.id),
-        overbuffTarget = `${OVERBUFF_ROOT}/players/pc/${userTag}`;
-
-    hero = hero.join(' ').replace(/[^A-z0-9]/g,'').toLowerCase();
-
-    return rp(overbuffTarget).
-    then(res =>{
-
-    let content = '',
-        opts = _.cloneDeep(embedOpts['~overbuff']),
-        $ = cheerio.load(res),
-        context = hero ? `div.theme-hero-${hero}` : null,
-        winSelector = `span.color-stat-win`,
-        winLoss = $(winSelector, context).first().parent().text(),
-        [wins, losses] = winLoss.split('-').map(_.parseInt),
-        winRate = ((wins/(wins+losses))*100).toString().split('').splice(0,5).join('') + '%',
-        imgUrl = $('img', context).first().attr('src');
-
-        // Did we get fully qualified, or need to work with relative URL?
-        if (imgUrl[0] == '/') {
-          imgUrl = `${OVERBUFF_ROOT}${imgUrl}`;
-        }
-
-        opts.embed.color = COLORS.ok;
-        opts.embed.title = "View on Overbuff";
-        opts.embed.description = `${mentionString(supplicant)}`;
-        opts.embed.description += ` ${winLoss} (${winRate}) as ${hero ? hero : 'all heroes'}`;
-        opts.embed.description += `\nfor ${userTag}`;
-        opts.embed.url = hero ? `${overbuffTarget}/heroes/${hero}` : overbuffTarget;
-        opts.embed.image.url = imgUrl;
-
-        return {content: content, opts: opts};
-    });
   }
 };
 // set cmdProc aliases:
 commandProcessors['~s'] = commandProcessors['~sb'] = commandProcessors['~safe'] = commandProcessors['~safebooru'];
 commandProcessors['~source'] = commandProcessors['~sauce'] = commandProcessors['~src'] = commandProcessors['~saucenao'];
-commandProcessors['~winloss'] = commandProcessors['~ratio'] = commandProcessors['~wl'] = commandProcessors['~overbuff'];
 commandProcessors['~r'] = commandProcessors['~roles'] = commandProcessors['~role'];
 
 function tagReturn(tags) {
@@ -374,20 +319,6 @@ function parseCommand(msg) {
       channel = msg.channel;
 
   return {proc: proc, message: msg, supplicant: supplicant, channel: channel};
-}
-
-function parseBattletag(player, supplicantId) {
-  let user, battleTag;
-
-  if (~player.indexOf('#')) {
-    battleTag = player.replace('#', '-');
-  } else {
-    player = player.toLowerCase();
-    user = userIDs[player] ? userIDs[player] : _.find(userIDs, {discord: supplicantId});
-    battleTag = user.battlenet;
-  }
-
-  return battleTag
 }
 
 function rot13(input) {

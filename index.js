@@ -13,6 +13,7 @@ const rp = require('request-promise');
 const Discord = require('discord.js');
 const ougi = new Discord.Client();
 const cheerio = require('cheerio');
+const schedule = require('node-schedule');
 
 const creds = require('./credentials');
 const DISCORD_TOKEN = creds.discord.token;
@@ -23,8 +24,32 @@ const PIXIV_ROOT = 'https://pixiv.net';
 
 const COLORS = {
   "ok": 0x71cd40,
+  "mid": 0xffcc00,
   "bad": 0xb00d00
 };
+
+// Some stuff for ALTTPR Dailies
+const RANDO_ICON_MAP = {
+    0: 'Bow', 1: 'Boomerang', 2: 'Hookshot', 3: 'Bombs',
+    4: 'Mushroom',  5: 'Magic Powder', 6: 'Ice Rod', 7: 'Pendant',
+    8: 'Bombos', 9: 'Ether', 10: 'Quake', 11: 'Lamp',
+    12: 'Hammer', 13: 'Shovel', 14: 'Flute', 15: 'Bugnet', 16: 'Book',
+    17: 'Empty Bottle', 18: 'Green Potion', 19: 'Somaria', 20: 'Cape',
+    21: 'Mirror', 22: 'Boots', 23: 'Gloves', 24: 'Flippers',
+    25: 'Moon Pearl', 26: 'Shield', 27: 'Tunic', 28: 'Heart',
+    29: 'Map', 30: 'Compass', 31: 'Big Key'
+};
+const RANDO_CODE_KEY = '1573397'; // find this value in patch data for "code" icon values
+const RANDO_PROTOCOL = 'https',
+      RANDO_DOMAIN = 'alttpr.com',
+      RANDO_DAILY_PATH = 'daily',
+      RANDO_HASH_ELEMENT = 'vt-hash-loader',
+      RANDO_DAILY_URL = `${RANDO_PROTOCOL}://${RANDO_DOMAIN}/${RANDO_DAILY_PATH}`,
+      RANDO_SEED_HASH_URL = `${RANDO_PROTOCOL}://${RANDO_DOMAIN}/hash/`,
+      RANDO_PERMALINK_URL = `${RANDO_PROTOCOL}://${RANDO_DOMAIN}/h/`,
+      ALDONIRO_ID = '243090135120347136',
+      CHEEKY_RANDOS_ID = '597536757105426432';
+let lastRandoDailyHash = '';
 
 let userIDs = creds.identities;
 // Create some convenience aliases:
@@ -259,12 +284,27 @@ let commandProcessors = {
       opts.embed.description = `${mentionString(supplicant)} Not sure what you want source for…`
       return Promise.resolve({content: content, opts: opts});
     }
+  },
+
+  "~rando": async function(message, supplicant, channel) {
+    let payload = message.content.split(' ').splice(1);
+    let hash;
+
+    if (_.isEmpty(payload) || payload[0] == "daily") {
+      hash = lastRandoDailyHash || await fetchRandoDailyHash();
+    } else {
+      hash = payload[0];
+    }
+
+    let embed = await makeRandoDailyEmbed(hash);
+    return {content: '', opts: embed};
   }
 };
 // set cmdProc aliases:
 commandProcessors['~s'] = commandProcessors['~sb'] = commandProcessors['~safe'] = commandProcessors['~safebooru'];
 commandProcessors['~source'] = commandProcessors['~sauce'] = commandProcessors['~src'] = commandProcessors['~saucenao'];
 commandProcessors['~r'] = commandProcessors['~roles'] = commandProcessors['~role'];
+commandProcessors['~daily'] = commandProcessors['~alttpr'] = commandProcessors['~seed'] = commandProcessors['~rando'];
 
 function tagReturn(tags) {
   let toEscape = /([\*\_])/g;
@@ -355,8 +395,11 @@ function twitterImageCount(message, match) {
   })
 }
 
+
+
 ougi.on('ready', () => {
   console.log('Ougibot is ready!');
+  checkRandoDaily();
 });
 
 // create an event listener for messages
@@ -420,6 +463,102 @@ ougi.on('messageReactionAdd', (msgReaction, user) => {
       catch(console.error);
   }
 });
+
+
+/*
+/   _|_|    _|    _|_|_|_|_|  _|_|_|_|_|  _|_|_|    _|_|_|    
+/ _|    _|  _|        _|          _|      _|    _|  _|    _|  
+/ _|_|_|_|  _|        _|          _|      _|_|_|    _|_|_|    
+/ _|    _|  _|        _|          _|      _|        _|    _|  
+/ _|    _|  _|_|_|_|  _|          _|      _|        _|    _| 
+*/
+async function fetchRandoDailyHash() {
+  const dailyHTML = await rp(RANDO_DAILY_URL),
+        dailyDOM = cheerio.load(dailyHTML),
+        dailyHash = dailyDOM(RANDO_HASH_ELEMENT)[0].attribs.hash;
+
+  if (dailyHash) {
+    // console.log(`Got hash: ${dailyHash}`);
+    return dailyHash;
+  } else {
+    return new Error("No hash found/parsed");
+  }
+}
+
+async function fetchRandoDailyJSON(hash) {
+  if (hash) {
+    const seedUrl = `${RANDO_SEED_HASH_URL}${hash}`;
+    // console.dir(`Fetching ${seedUrl}`);
+    const seedJson = await rp({url: seedUrl, json: true});
+    // console.dir(seedJson.spoiler.meta.name);
+    return seedJson;
+  } else {
+    return new Error("No hash provided");
+  }
+}
+
+async function makeRandoDailyEmbed(hash) {
+    const seed = await fetchRandoDailyJSON(hash),
+          meta = seed.spoiler.meta,
+          permalinkUrl = `${RANDO_PERMALINK_URL}${hash}`;
+
+    let descriptionString = `This is a summary of seed ${hash}`;
+    let itemCode = _.find(seed.patch, RANDO_CODE_KEY);
+
+    let embed = new Discord.RichEmbed();
+      embed.setTitle(meta.name || `Custom Seed ${hash}`);
+      embed.setDescription(descriptionString); // also be more clever here
+      embed.setColor(COLORS.ok); // base this on difficulty, mode, etc.
+      embed.setURL(permalinkUrl);
+      embed.addField('Logic', meta.logic, true);
+      embed.addField('Difficulty', meta.difficulty, true);
+      embed.addField('Variation', meta.variation, true);
+      embed.addField('State', meta.mode, true);
+      embed.addField('Swords', meta.weapons, true);
+      embed.addField('Goal', meta.goal, true);
+      if (itemCode) {
+        itemCode = itemCode[RANDO_CODE_KEY].map(n=>RANDO_ICON_MAP[n]).join(", ")
+        embed.addField('File Select Code', itemCode, false);
+      }
+      // embed.addField('Permalink', permalinkUrl, false);
+
+    // console.dir(embed);
+    return embed;
+}
+
+async function postRandoDaily(hash, channel, guild) {
+  guild = guild || ougi.guilds.get(ALDONIRO_ID),
+  channel = channel || guild.channels.get(CHEEKY_RANDOS_ID);
+  
+  let embed = await makeRandoDailyEmbed(hash);
+  return channel.send('', embed);
+}
+
+async function checkRandoDaily(retry=true) {
+  let newHash = await fetchRandoDailyHash();
+
+  if (_.isError(newHash)) {
+    // Error fetching; server problem?
+    return ougi.setTimeout(checkRandoDaily, 90000, true);
+  }
+  else if (newHash !== lastRandoDailyHash) {
+    // Got a new hash! Post about the seed.
+    console.log(`New daily! ${newHash}`)
+    lastRandoDailyHash = newHash;
+    return postRandoDaily(newHash);
+  }
+  else if (retry) {
+    // No error, same hash. Not generated yet? Try once more.
+    return ougi.setTimeout(checkRandoDaily, 90000, false);
+  }
+}
+
+// At one minute past midnight UTC, check for a new ALTTPR Daily Challenge
+let randoSchedule = schedule.scheduleJob(
+    { rule: "1    0    *    *    *", tz: "UTC" },
+    checkRandoDaily
+);
+
 
 // log in
 ougi.login(DISCORD_TOKEN);

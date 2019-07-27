@@ -399,7 +399,6 @@ function twitterImageCount(message, match) {
 
 ougi.on('ready', () => {
   console.log('Ougibot is ready!');
-  checkRandoDaily();
 });
 
 // create an event listener for messages

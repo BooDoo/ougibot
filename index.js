@@ -472,6 +472,9 @@ ougi.on('messageReactionAdd', (msgReaction, user) => {
 / _|    _|  _|        _|          _|      _|        _|    _|  
 / _|    _|  _|_|_|_|  _|          _|      _|        _|    _| 
 */
+// With thanks to @tcprescott for /pyz3r and /alttpr-discord-bot repos
+// for guidance on endpoints, etc. All errors are my own.
+
 async function fetchRandoDailyHash() {
   const dailyHTML = await rp(RANDO_DAILY_URL),
         dailyDOM = cheerio.load(dailyHTML),

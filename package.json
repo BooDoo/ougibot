@@ -1,6 +1,6 @@
 {
   "name": "ougibot",
-  "version": "0.0.666",
+  "version": "0.0.777",
   "description": "baby's first Discord bot",
   "main": "index.js",
   "dependencies": {

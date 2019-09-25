@@ -43,7 +43,7 @@ const RANDO_CODE_KEY = '1573397'; // find this value in patch data for "code" ic
 const RANDO_PROTOCOL = 'https',
       RANDO_DOMAIN = 'alttpr.com',
       RANDO_DAILY_PATH = 'daily',
-      RANDO_HASH_ELEMENT = 'vt-hash-loader',
+      RANDO_HASH_ELEMENT = 'Hashloader',
       RANDO_DAILY_URL = `${RANDO_PROTOCOL}://${RANDO_DOMAIN}/${RANDO_DAILY_PATH}`,
       RANDO_SEED_HASH_URL = `${RANDO_PROTOCOL}://${RANDO_DOMAIN}/hash/`,
       RANDO_PERMALINK_URL = `${RANDO_PROTOCOL}://${RANDO_DOMAIN}/h/`,
@@ -498,7 +498,6 @@ async function fetchRandoDailyJSON(hash) {
     return new Error("No hash provided");
   }
 }
-
 async function makeRandoDailyEmbed(hash) {
     const seed = await fetchRandoDailyJSON(hash),
           meta = seed.spoiler.meta,
@@ -512,12 +511,36 @@ async function makeRandoDailyEmbed(hash) {
       embed.setDescription(descriptionString); // also be more clever here
       embed.setColor(COLORS.ok); // base this on difficulty, mode, etc.
       embed.setURL(permalinkUrl);
-      embed.addField('Logic', meta.logic, true);
-      embed.addField('Difficulty', meta.difficulty, true);
-      embed.addField('Variation', meta.variation, true);
-      embed.addField('State', meta.mode, true);
-      embed.addField('Swords', meta.weapons, true);
-      embed.addField('Goal', meta.goal, true);
+
+      embed.addField('Item Placement',
+`**Glitches Required:** ${meta.logic}
+**Item Placement:** ${meta.item_placement}
+**Dungeon Items:** ${meta.dungeon_items}
+**Accessibility:** ${meta.accessibility}`,
+      true);
+
+      embed.addField('Goal',
+`**Goal:** ${meta.goal}
+**Open Tower:** ${meta.entry_crystals_tower}
+**Ganon Vulnerable:** ${meta.entry_crystals_ganon}`,
+      true);
+
+      embed.addField('Gameplay',
+`**World State:** ${meta.mode}
+**Entrance Shuffle:** ${meta.shuffle || "None"}
+**Boss Shuffle:** ${meta["enemizer.boss_shuffle"]}
+**Enemy Shuffle:** ${meta["enemizer.enemy_shuffle"]}
+**Hints:** ${meta.hints}`,
+      true);
+
+      embed.addField('Difficulty',
+`**Swords:** ${meta.weapons}
+**Item Pool:** ${meta.item_pool}
+**Item Functionality:** ${meta.item_functionality}
+**Enemy Damage:** ${meta["enemizer.enemy_damage"]}
+**Enemy Health:** ${meta["enemizer.enemy_health"]}`,
+      true);
+
       if (itemCode) {
         itemCode = itemCode[RANDO_CODE_KEY].map(n=>RANDO_ICON_MAP[n]).join(", ")
         embed.addField('File Select Code', itemCode, false);
@@ -531,7 +554,7 @@ async function makeRandoDailyEmbed(hash) {
 async function postRandoDaily(hash, channel, guild) {
   guild = guild || ougi.guilds.get(ALDONIRO_ID),
   channel = channel || guild.channels.get(CHEEKY_RANDOS_ID);
-  
+
   let embed = await makeRandoDailyEmbed(hash);
   return channel.send('', embed);
 }

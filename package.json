@@ -1,4 +1,8 @@
 {
+  "name": "ougibot",
+  "version": "0.1.666",
+  "description": "baby's first Discord bot",
+  "main": "index.js",
   "dependencies": {
     "bluebird": "^3.7.2",
     "cheerio": "^1.0.0-rc.5",
@@ -8,5 +12,25 @@
     "node-schedule": "^2.0.0",
     "request-promise": "^4.2.6",
     "twit": "^2.2.11"
-  }
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/BooDoo/ougibot.git"
+  },
+  "keywords": [
+    "discord",
+    "bot",
+    "node",
+    "anime"
+  ],
+  "author": "BooDoo <joelmccoy+github@gmail.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/BooDoo/ougibot/issues"
+  },
+  "homepage": "https://github.com/BooDoo/ougibot#readme"
 }

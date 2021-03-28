@@ -15,6 +15,7 @@ const cheerio = require('cheerio');
 const schedule = require('node-schedule');
 const rp = require('request-promise');
 const creds = require('./credentials');
+const T = new require('twit')(creds.twitter);
 const DISCORD_TOKEN = creds.discord.token;
 const SAUCENAO_KEY = creds.saucenao.key;
 const SAFEBOORU_ROOT = 'https://safebooru.org';
@@ -363,18 +364,17 @@ function twitterImageCount(message, match) {
   // There could be more than one match! Discord embeds all of them
   // Unfortunately we can't use more than one of the same reaction
   // So just choose the last one i guess :(
-  link = match[match.length - 1]
+  statusId = _.last(match)
   // console.log(`Going to ${link}`)
-  rp({
-    uri: link,
-    json: false
-  }).then(res => {
-    // We look for both og:image and /media/ because videos also have an og:image
-    // Also to make this more annoying for people (joel) to try and cheese this
-    picMatch = res.match(/meta\s+property="og:image"\s+content="https:\/\/[a-z\.]+\/media/gi)
+  T.get(`statuses/show/${statusId}`).then(res => {
+    let tweetContent = res.data;
+    // Extended_entities.media will have the images/movies;
+    // we'll just focus on `photo` type here for our purposes
+    let extended_entities = [].concat(_.property('extended_entities.media')(tweetContent));
+    let picCount = extended_entities.filter(e=>e.type="photo").length
 
     // Up to four images, if we get more do nothing
-    if (picMatch !== null && picMatch.length <= 4) {
+    if (picCount > 0 && picCount <= 4) {
       numbers = ['1⃣', '2⃣', '3⃣', '4⃣'];
       // React in order
       message.react(numbers[picMatch.length - 1]).then(react => {
@@ -416,7 +416,7 @@ ougi.on('message', message => {
   }
   else {
     // Twitter link?
-    match = message.content.match(/https:\/\/twitter.com\/[a-z_0-9]+\/status\/[0-9]+/gi)
+    match = message.content.match(/https?:\/\/(?:mobile\.|www\.)?twitter\.com\/[a-z_0-9]+\/status\/([0-9]+)/i)
     if (match !== null) {
       twitterImageCount(message, match);
     }

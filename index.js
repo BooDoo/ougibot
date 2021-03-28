@@ -377,7 +377,7 @@ function twitterImageCount(message, match) {
     if (picCount > 0 && picCount <= 4) {
       numbers = ['1⃣', '2⃣', '3⃣', '4⃣'];
       // React in order
-      message.react(numbers[picMatch.length - 1]).then(react => {
+      message.react(numbers[picCount - 1]).then(react => {
         react.message.react('🖼');
       });
     }

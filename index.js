@@ -9,12 +9,11 @@ Math.random = rng.random.bind(rng);
 const path = require('path');
 const _ = require('lodash');
 const P = require('bluebird');
-const rp = require('request-promise');
 const Discord = require('discord.js');
 const ougi = new Discord.Client();
 const cheerio = require('cheerio');
 const schedule = require('node-schedule');
-
+const rp = require('request-promise');
 const creds = require('./credentials');
 const DISCORD_TOKEN = creds.discord.token;
 const SAUCENAO_KEY = creds.saucenao.key;
@@ -50,15 +49,6 @@ const RANDO_PROTOCOL = 'https',
       ALDONIRO_ID = '243090135120347136',
       CHEEKY_RANDOS_ID = '597536757105426432';
 let lastRandoDailyHash = '';
-
-let userIDs = creds.identities;
-// Create some convenience aliases:
-userIDs.drew = userIDs.alix = userIDs.alixnovosi = userIDs.shelur = userIDs.andrew;
-userIDs.boodoo = userIDs.boodooperson = userIDs.gm = userIDs.joel;
-userIDs.nixed = userIDs.nickisnixed = userIDs.humble = userIDs.nick;
-userIDs.tsiro = userIDs.orist = userIDs.richard;
-userIDs.nate = userIDs.lentilstew = userIDs.lentil = userIDs.nathaniel;
-userIDs.webber = userIDs.weebs;
 
 let embedOpts = {
   "~safebooru": {
@@ -104,7 +94,7 @@ function notAdmin(role) {
 function isAssignable(role) {
   // return !hasAdmin(role) && role.position > 0;
   // Ugggh, let's just take anything under 'ougibot' that isn't @everyone:
-  let ougiPosition = role.guild.roles.find('name', 'ougibot').position;
+  let ougiPosition = role.guild.roles.cache.find(r=>r.name=='ougibot').position;
   return ougiPosition > role.position && role.position > 0;
 }
 
@@ -113,7 +103,7 @@ function formatRoles(rolesCol) {
 }
 
 function findRole(query, roles) {
-  roles = roles || ougi.guilds.first().roles;
+  roles = roles || ougi.guilds.cache.first().roles.cache;
   return roles.find(r=> ~r.name.toLowerCase().indexOf(query))
 }
 
@@ -123,12 +113,12 @@ function checkMemberByName(member, query) {
   return ~username.indexOf(query);
 }
 
-function getGuildMember(query) {
-  let guild = ougi.guilds.first();
+function getGuildMember(query, guild) {
+  guild = guild || ougi.guilds.cache.first();
   let member;
 
   // did we pass an id? or a username?
-  member = guild.members.get(query) || guild.members.find(m=>checkMemberByName(m, query));
+  member = guild.member(query) || guild.members.cache.find(m=>checkMemberByName(m, query));
 
   console.log(`and we got: ${member}`);
   return member;
@@ -136,13 +126,14 @@ function getGuildMember(query) {
 
 function adjustRole(action, member, role) {
   member = member.constructor.name == "GuildMember" ? member : getGuildMember(member);
-  role = role.constructor.name == "Role" ? role : findRole(role);
+  role = role.constructor.name == "Role" ? role : findRole(role, member.guild.roles.cache);
   if (!isAssignable(role)) {
     return P.resolve({content: `No role found to change`});
   }
-  action = (action || 'add').toLowerCase() + "Role";
-  return member[action](role, "spooky ougi").
-      then(m=>{ return {content: `Your roles: ${formatRoles(member.roles.filter(isAssignable))}`} });
+  action = (action || 'add').toLowerCase();
+  return member.roles[action](role, "spooky ougi").
+      then(m=>member.fetch(force=true)).
+      then(m=>{ return {content: `Your roles: ${formatRoles(member.roles.cache.filter(isAssignable))}`} });
 }
 
 let commandProcessors = {
@@ -154,17 +145,17 @@ let commandProcessors = {
     let supplicantMember = message.member || getGuildMember(supplicant.id);
 
     let guild = supplicantMember.guild;
-    let ougiPosition = guild.roles.find('name', 'ougibot').position;
+    let ougiPosition = guild.roles.cache.find(role => role.name=='ougibot').position;
 
     let actions = {
       "list": (member) => {
         return P.resolve({
-          content: `Available roles: ${formatRoles(member.guild.roles.filter(isAssignable))}`
+          content: `Available roles: ${formatRoles(member.guild.roles.cache.filter(isAssignable))}`
         });
       },
       "mine": (member) => {
         return P.resolve({
-          content: `Your roles: ${formatRoles(member.roles.filter(isAssignable))}`
+          content: `Your roles: ${formatRoles(member.roles.cache.filter(isAssignable))}`
         });
       },
       "add": (member, role) => {
@@ -506,7 +497,7 @@ async function makeRandoDailyEmbed(hash) {
     let descriptionString = `This is a summary of seed ${hash}`;
     let itemCode = _.find(seed.patch, RANDO_CODE_KEY);
 
-    let embed = new Discord.RichEmbed();
+    let embed = new Discord.MessageEmbed();
       embed.setTitle(meta.name || `Custom Seed ${hash}`);
       embed.setDescription(descriptionString); // also be more clever here
       embed.setColor(COLORS.ok); // base this on difficulty, mode, etc.
@@ -552,8 +543,8 @@ async function makeRandoDailyEmbed(hash) {
 }
 
 async function postRandoDaily(hash, channel, guild) {
-  guild = guild || ougi.guilds.get(ALDONIRO_ID),
-  channel = channel || guild.channels.get(CHEEKY_RANDOS_ID);
+  guild = guild || ougi.guilds.cache.get(ALDONIRO_ID),
+  channel = channel || guild.channels.cache.get(CHEEKY_RANDOS_ID);
 
   let embed = await makeRandoDailyEmbed(hash);
   return channel.send('', embed);
@@ -587,3 +578,5 @@ let randoSchedule = schedule.scheduleJob(
 
 // log in
 ougi.login(DISCORD_TOKEN);
+
+module.exports={ ougi, parseCommand, isAssignable, creds, hasAdmin, notAdmin, formatRoles, findRole, checkMemberByName, getGuildMember, adjustRole, commandProcessors, mentionString, checkRandoDaily, postRandoDaily};

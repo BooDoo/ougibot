@@ -1,41 +1,12 @@
 {
-  "name": "ougibot",
-  "version": "0.0.666",
-  "description": "baby's first Discord bot",
-  "main": "index.js",
   "dependencies": {
-    "bluebird": "^3.5.1",
-    "bufferutil": "^2.0.0",
-    "cheerio": "^0.22.0",
-    "discord.js": "^11.2.1",
-    "erlpack": "git://github.com/hammerandchisel/erlpack.git#b3c9a6769b347299eb2eed10738c0b3b6cb96cb7",
-    "lodash": "^4.17.15",
+    "bluebird": "^3.7.2",
+    "cheerio": "^1.0.0-rc.5",
+    "discord.js": "^12.5.1",
+    "lodash": "^4.17.21",
     "mersenne-twister": "^1.1.0",
-    "node-opus": "^0.2.4",
-    "node-schedule": "^1.3.2",
-    "opusscript": "0.0.2",
-    "request": "^2.88.0",
-    "request-promise": "^4.1.1",
-    "uws": "^0.12.0"
-  },
-  "devDependencies": {},
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/BooDoo/ougibot.git"
-  },
-  "keywords": [
-    "discord",
-    "bot",
-    "node",
-    "anime"
-  ],
-  "author": "BooDoo <joelmccoy+github@gmail.com>",
-  "license": "MIT",
-  "bugs": {
-    "url": "https://github.com/BooDoo/ougibot/issues"
-  },
-  "homepage": "https://github.com/BooDoo/ougibot#readme"
+    "node-schedule": "^2.0.0",
+    "request-promise": "^4.2.6",
+    "twit": "^2.2.11"
+  }
 }

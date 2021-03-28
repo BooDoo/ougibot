@@ -371,7 +371,7 @@ function twitterImageCount(message, match) {
     // Extended_entities.media will have the images/movies;
     // we'll just focus on `photo` type here for our purposes
     let extended_entities = [].concat(_.property('extended_entities.media')(tweetContent));
-    let picCount = extended_entities.filter(e=>e.type="photo").length
+    let picCount = extended_entities.filter(e=>e.type=="photo").length
 
     // Up to four images, if we get more do nothing
     if (picCount > 0 && picCount <= 4) {
